@@ -511,6 +511,16 @@
     main{ padding-top: 40px; }
     .profile h1{ font-size:1.45rem; }
   }
+
+  /* Kotak statistik pengunjung (GoatCounter) */
+  .visitor-box{
+    display:none; margin:14px auto 0; padding:10px 16px; max-width:260px;
+    border-radius:14px; background:rgba(255,255,255,.55); border:1px solid rgba(15,138,73,.25);
+    text-align:center; font-size:.85rem; line-height:1.4;
+  }
+  .visitor-box.is-ready{ display:block; }
+  .visitor-box strong{ display:block; font-size:1.35rem; color:#0f8a49; }
+  .visitor-box small{ display:block; opacity:.75; }
 </style>
 
 <!-- Vercel Web Analytics: aktif setelah Analytics di-Enable di dashboard Vercel -->
@@ -651,6 +661,11 @@
   <footer class="a11y-readable-target">
     &copy; <span id="year"></span> <span data-i18n="footer_line">Kelurahan Utan Panjang · Kecamatan Kemayoran</span><br>
     <span data-i18n="footer_line2">Kota Administrasi Jakarta Pusat</span>
+    <div class="visitor-box" id="visitorBox" aria-live="polite">
+      <strong id="visitorCount">-</strong>
+      <span>kunjungan halaman</span>
+      <small id="visitorSince"></small>
+    </div>
   </footer>
 </main>
 
@@ -1214,6 +1229,41 @@
   }
 
   applyState();
+})();
+</script>
+
+<!-- ========== STATISTIK PENGUNJUNG (GoatCounter) ==========
+  Isi 2 nilai di bawah setelah daftar di goatcounter.com.
+  Selama GC_CODE kosong, tidak ada yang dimuat dan kotak statistik tidak tampil. -->
+<script>
+(function(){
+  var GC_CODE  = 'utanpanjang';              // contoh: 'utanpanjang' (dari utanpanjang.goatcounter.com)
+  var GC_SINCE = '12 November 2026';              // tanggal mulai dihitung, contoh: '13 November 2026'
+  if(!GC_CODE) return;
+
+  // 1) Nama event klik per tombol, otomatis dari domain tujuan
+  document.querySelectorAll('a.glass-link').forEach(function(a){
+    var host = '';
+    try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
+    if(host) a.setAttribute('data-goatcounter-click', 'klik-' + host);
+  });
+
+  // 2) Muat GoatCounter setelah atribut klik terpasang
+  var sc = document.createElement('script');
+  sc.async = true;
+  sc.src = 'https://gc.zgo.at/count.js';
+  sc.setAttribute('data-goatcounter', 'https://' + GC_CODE + '.goatcounter.com/count');
+  document.head.appendChild(sc);
+
+  // 3) Tampilkan total kunjungan; kotak tetap tersembunyi jika gagal
+  fetch('https://' + GC_CODE + '.goatcounter.com/counter/TOTAL.json')
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){
+      document.getElementById('visitorCount').textContent = d.count;
+      if(GC_SINCE) document.getElementById('visitorSince').textContent = 'dihitung sejak ' + GC_SINCE;
+      document.getElementById('visitorBox').classList.add('is-ready');
+    })
+    .catch(function(){});
 })();
 </script>
 
