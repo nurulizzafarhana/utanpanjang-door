@@ -512,6 +512,17 @@
     .profile h1{ font-size:1.45rem; }
   }
 
+  /* Kartu induk PPID + sub-menu */
+  .ppid-parent[aria-expanded="true"] .glass-arrow{ transform: rotate(90deg); }
+  .ppid-panel{ display:none; flex-direction:column; gap:10px; padding:2px 0 4px 16px; }
+  .ppid-panel.open{ display:flex; }
+  .ppid-menu-title{
+    margin:6px 4px 0; font-size:.74rem; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase; color:#0f8a49;
+  }
+  .ppid-panel .glass-link{ padding:11px 16px; }
+  .dl-badge{ display:inline-block; align-self:flex-start; margin-top:4px; padding:2px 9px; border-radius:999px; background:#0f8a49; color:#fff; font-size:.7rem; font-weight:600; }
+  .dl-badge[hidden]{ display:none; }
   /* Kotak statistik pengunjung (GoatCounter) */
   .visitor-box{
     display:none; margin:14px auto 0; padding:10px 16px; max-width:260px;
@@ -655,6 +666,9 @@
       </span>
       <svg class="glass-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
     </a>
+
+    <!-- Kartu unduhan dirender dari daftar DOWNLOADS (lihat script statistik di bawah) -->
+    <div id="downloadList" style="display:contents"></div>
 
   </section>
 
@@ -1239,13 +1253,89 @@
 (function(){
   var GC_CODE  = 'utanpanjang';              // contoh: 'utanpanjang' (dari utanpanjang.goatcounter.com)
   var GC_SINCE = '12 November 2026';              // tanggal mulai dihitung, contoh: '13 November 2026'
+
+  // ===== MENU PPID (kartu induk + sub-menu) =====
+  // Tiap sub-menu punya daftar file. Tambah satu baris per file.
+  // id  : nama event di GoatCounter (huruf kecil, tanpa spasi) -> tercatat "unduh-<id>"
+  // url : link file (Google Drive, atau file di repo ini misalnya '/files/laporan.pdf')
+  // Kalau semua daftar kosong, kartu PPID tidak ditampilkan.
+  var PPID_MENU = [
+    { menu: 'Laporan', items: [
+      { id:'laporan-ppid-2025', title:'Laporan Layanan Informasi Publik 2025', sub:'PDF', url:'https://drive.google.com/file/d/1S8q2RXNurFIHXxxGha8bM_rujYpPZr2y/view?usp=sharing' },
+    ]},
+    { menu: 'SK', items: [
+      { id:'sk-lurah-ppid',   title:'SK Lurah tentang PPID Kelurahan Utan Panjang', sub:'PDF', url:'https://drive.google.com/file/d/1JRaI_mLGfVvmkD-bxUlJVJEcNwfB7Ub8/view?usp=sharing' },
+      { id:'sk-sop-ppid',     title:'SK SOP PPID Kelurahan Utan Panjang',           sub:'PDF', url:'https://drive.google.com/file/d/18NdS5mZic0JnHJYKqVEFKoX8YKEW8yTh/view?usp=sharing' },
+      { id:'sk-dip',          title:'SK Daftar Informasi Publik (DIP)',             sub:'PDF', url:'https://drive.google.com/file/d/1xVd4G3G4Cn1Z-gJM41MLTXd-lvHjX4q4/view?usp=sharing' },
+      { id:'sk-dik',          title:'SK Daftar Informasi Dikecualikan (DIK)',       sub:'PDF', url:'https://drive.google.com/file/d/1_vfMWjskQBOyV69geTi3_zL15d7JG6uZ/view?usp=sharing' },
+    ]}
+  ];
+  var list = document.getElementById('downloadList');
+  var dlBadges = [];
+  var total = PPID_MENU.reduce(function(n,m){ return n + m.items.length; }, 0);
+  if(total > 0){
+    var ARROW = '<svg class="glass-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+    var parent = document.createElement('a');
+    parent.className = 'glass-link ppid-parent';
+    parent.href = '#ppid-menu';
+    parent.setAttribute('role', 'button');
+    parent.setAttribute('aria-expanded', 'false');
+    parent.setAttribute('aria-controls', 'ppidPanel');
+    parent.innerHTML =
+      '<span class="glass-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a49" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h7"/></svg></span>' +
+      '<span class="glass-text"><span class="title">PPID Kelurahan Utan Panjang</span><span class="sub">Pejabat Pengelola Informasi dan Dokumentasi</span></span>' + ARROW;
+    var panel = document.createElement('div');
+    panel.className = 'ppid-panel';
+    panel.id = 'ppidPanel';
+
+    PPID_MENU.forEach(function(m){
+      if(!m.items.length) return;
+      var h = document.createElement('div');
+      h.className = 'ppid-menu-title';
+      h.textContent = m.menu;
+      panel.appendChild(h);
+      m.items.forEach(function(d){
+        var a = document.createElement('a');
+        a.className = 'glass-link';
+        a.href = d.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        if(d.url.charAt(0) === '/') a.setAttribute('download', '');
+        a.setAttribute('data-goatcounter-click', 'unduh-' + d.id);
+        a.setAttribute('data-goatcounter-title', 'Unduh: ' + d.title);
+        a.innerHTML =
+          '<span class="glass-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a49" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></span>' +
+          '<span class="glass-text"><span class="title"></span><span class="sub"></span></span>';
+        a.querySelector('.title').textContent = d.title;
+        a.querySelector('.sub').textContent = d.sub || '';
+        var badge = document.createElement('span');
+        badge.className = 'dl-badge';
+        badge.hidden = true;
+        a.querySelector('.glass-text').appendChild(badge);
+        dlBadges.push({ el: badge, id: d.id });
+        panel.appendChild(a);
+      });
+    });
+
+    parent.addEventListener('click', function(e){
+      e.preventDefault();
+      var open = panel.classList.toggle('open');
+      parent.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if(open && window.goatcounter && window.goatcounter.count){
+        window.goatcounter.count({path:'buka-menu-ppid', title:'Buka menu PPID', event:true});
+      }
+    });
+    list.appendChild(parent);
+    list.appendChild(panel);
+  }
+
   if(!GC_CODE) return;
 
   // 1) Nama event klik per tombol, otomatis dari domain tujuan
   document.querySelectorAll('a.glass-link').forEach(function(a){
     var host = '';
     try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
-    if(host) a.setAttribute('data-goatcounter-click', 'klik-' + host);
+    if(host && !a.hasAttribute('data-goatcounter-click')) a.setAttribute('data-goatcounter-click', 'klik-' + host);
   });
 
   // 2) Muat GoatCounter setelah atribut klik terpasang
@@ -1264,6 +1354,22 @@
       document.getElementById('visitorBox').classList.add('is-ready');
     })
     .catch(function(){});
+
+  // 4) Badge jumlah klik unduh per file. Muncul hanya kalau datanya berhasil diambil.
+  //    Dicoba dua format path; kalau dua-duanya gagal, badge tetap tersembunyi.
+  function getCount(path){
+    return fetch('https://' + GC_CODE + '.goatcounter.com/counter/' + path + '.json')
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); });
+  }
+  dlBadges.forEach(function(b){
+    var name = 'unduh-' + b.id;
+    getCount(name).catch(function(){ return getCount('/' + name); })
+      .then(function(d){
+        b.el.textContent = d.count + ' klik unduh';
+        b.el.hidden = false;
+      })
+      .catch(function(){});
+  });
 })();
 </script>
 
