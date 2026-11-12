@@ -677,7 +677,7 @@
     <span data-i18n="footer_line2">Kota Administrasi Jakarta Pusat</span>
     <div class="visitor-box" id="visitorBox" aria-live="polite">
       <strong id="visitorCount">-</strong>
-      <span>Kunjungan Halaman</span>
+      <span id="visitorLabel">Kunjungan Halaman</span>
       <small id="visitorSince"></small>
     </div>
   </footer>
@@ -1259,19 +1259,57 @@
   // id  : nama event di GoatCounter (huruf kecil, tanpa spasi) -> tercatat "unduh-<id>"
   // url : link file (Google Drive, atau file di repo ini misalnya '/files/laporan.pdf')
   // Kalau semua daftar kosong, kartu PPID tidak ditampilkan.
+  // Tiap menu/item punya teks Indonesia (menu, title, sub) dan Inggris (menu_en, title_en, sub_en).
+  // Kalau versi _en dikosongkan, teks Indonesia dipakai di kedua bahasa.
   var PPID_MENU = [
-    { menu: 'Laporan', items: [
-      { id:'laporan-ppid-2025', title:'Laporan Layanan Informasi Publik 2025', sub:'PDF', url:'https://drive.google.com/file/d/1S8q2RXNurFIHXxxGha8bM_rujYpPZr2y/view?usp=sharing' },
+    { menu: 'Laporan', menu_en: 'Reports', items: [
+      { id:'laporan-ppid-2025', title:'Laporan Layanan Informasi Publik 2025', title_en:'Public Information Service Report 2025', sub:'PDF', url:'https://drive.google.com/file/d/1S8q2RXNurFIHXxxGha8bM_rujYpPZr2y/view?usp=sharing' },
     ]},
-    { menu: 'SK', items: [
-      { id:'sk-lurah-ppid',   title:'SK Lurah tentang PPID Kelurahan Utan Panjang', sub:'PDF', url:'https://drive.google.com/file/d/1JRaI_mLGfVvmkD-bxUlJVJEcNwfB7Ub8/view?usp=sharing' },
-      { id:'sk-sop-ppid',     title:'SK SOP PPID Kelurahan Utan Panjang',           sub:'PDF', url:'https://drive.google.com/file/d/18NdS5mZic0JnHJYKqVEFKoX8YKEW8yTh/view?usp=sharing' },
-      { id:'sk-dip',          title:'SK Daftar Informasi Publik (DIP)',             sub:'PDF', url:'https://drive.google.com/file/d/1xVd4G3G4Cn1Z-gJM41MLTXd-lvHjX4q4/view?usp=sharing' },
-      { id:'sk-dik',          title:'SK Daftar Informasi Dikecualikan (DIK)',       sub:'PDF', url:'https://drive.google.com/file/d/1_vfMWjskQBOyV69geTi3_zL15d7JG6uZ/view?usp=sharing' },
+    { menu: 'Laporan RT/RW', menu_en: 'RT/RW Reports', items: [
+      // Pengumpulan laporan: isi url dengan link Google Form, lalu hapus tanda //
+      // { id:'form-laporan-rtrw', type:'form', title:'Kirim Laporan RT/RW', title_en:'Submit RT/RW Report', sub:'Form pengumpulan laporan bulanan', sub_en:'Monthly report submission form', url:'GANTI_LINK_FORM' },
+    ]},
+    { menu: 'SK', menu_en: 'Decrees', items: [
+      { id:'sk-lurah-ppid',   title:'SK Lurah tentang PPID Kelurahan Utan Panjang', title_en:'Village Head Decree on PPID of Utan Panjang',            sub:'PDF', url:'https://drive.google.com/file/d/1JRaI_mLGfVvmkD-bxUlJVJEcNwfB7Ub8/view?usp=sharing' },
+      { id:'sk-sop-ppid',     title:'SK SOP PPID Kelurahan Utan Panjang',           title_en:'Decree on PPID Standard Operating Procedure',            sub:'PDF', url:'https://drive.google.com/file/d/18NdS5mZic0JnHJYKqVEFKoX8YKEW8yTh/view?usp=sharing' },
+      { id:'sk-dip',          title:'SK Daftar Informasi Publik (DIP)',             title_en:'Decree on the Public Information List (DIP)',            sub:'PDF', url:'https://drive.google.com/file/d/1xVd4G3G4Cn1Z-gJM41MLTXd-lvHjX4q4/view?usp=sharing' },
+      { id:'sk-dik',          title:'SK Daftar Informasi Dikecualikan (DIK)',       title_en:'Decree on the Excluded Information List (DIK)',          sub:'PDF', url:'https://drive.google.com/file/d/1_vfMWjskQBOyV69geTi3_zL15d7JG6uZ/view?usp=sharing' },
     ]}
   ];
   var list = document.getElementById('downloadList');
   var dlBadges = [];
+  var L10N = [];
+  function curLang(){ return String(document.documentElement.lang || 'id').slice(0,2) === 'en' ? 'en' : 'id'; }
+  function lt(el, id, en){
+    L10N.push({ el: el, id: id, en: en || id });
+    el.textContent = (curLang() === 'en' && en) ? en : id;
+    el.classList.add('a11y-readable-target');
+  }
+  var BULAN_EN = {Januari:'January',Februari:'February',Maret:'March',April:'April',Mei:'May',Juni:'June',Juli:'July',Agustus:'August',September:'September',Oktober:'October',November:'November',Desember:'December'};
+  function sinceText(){
+    if(!GC_SINCE) return '';
+    if(curLang() === 'en'){
+      var t = GC_SINCE.replace(/[A-Za-z]+/g, function(w){ return BULAN_EN[w] || w; });
+      return 'counted since ' + t;
+    }
+    return 'dihitung sejak ' + GC_SINCE;
+  }
+  var visitorTotal = null;
+  function renderVisitor(){
+    if(visitorTotal === null) return;
+    document.getElementById('visitorCount').textContent = visitorTotal;
+    document.getElementById('visitorSince').textContent = sinceText();
+  }
+  function badgeText(b){
+    var en = curLang() === 'en';
+    return b.count + ' ' + (b.isForm ? (en ? 'form opens' : 'klik buka form') : (en ? 'download clicks' : 'klik unduh'));
+  }
+  function refreshLang(){
+    L10N.forEach(function(x){ x.el.textContent = (curLang() === 'en') ? x.en : x.id; });
+    dlBadges.forEach(function(b){ if(b.count !== null) b.el.textContent = badgeText(b); });
+    renderVisitor();
+  }
+  lt(document.getElementById('visitorLabel'), 'Kunjungan Halaman', 'Page Visits');
   var total = PPID_MENU.reduce(function(n,m){ return n + m.items.length; }, 0);
   if(total > 0){
     var ARROW = '<svg class="glass-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
@@ -1283,7 +1321,9 @@
     parent.setAttribute('aria-controls', 'ppidPanel');
     parent.innerHTML =
       '<span class="glass-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a49" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h7"/></svg></span>' +
-      '<span class="glass-text"><span class="title">PPID Kelurahan Utan Panjang</span><span class="sub">Pejabat Pengelola Informasi dan Dokumentasi</span></span>' + ARROW;
+      '<span class="glass-text"><span class="title"></span><span class="sub"></span></span>' + ARROW;
+    lt(parent.querySelector('.title'), 'PPID Kelurahan Utan Panjang', 'PPID Utan Panjang Urban Village');
+    lt(parent.querySelector('.sub'), 'Pejabat Pengelola Informasi dan Dokumentasi', 'Information and Documentation Management Officer');
     var panel = document.createElement('div');
     panel.className = 'ppid-panel';
     panel.id = 'ppidPanel';
@@ -1292,7 +1332,7 @@
       if(!m.items.length) return;
       var h = document.createElement('div');
       h.className = 'ppid-menu-title';
-      h.textContent = m.menu;
+      lt(h, m.menu, m.menu_en);
       panel.appendChild(h);
       m.items.forEach(function(d){
         var a = document.createElement('a');
@@ -1300,19 +1340,23 @@
         a.href = d.url;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
-        if(d.url.charAt(0) === '/') a.setAttribute('download', '');
-        a.setAttribute('data-goatcounter-click', 'unduh-' + d.id);
-        a.setAttribute('data-goatcounter-title', 'Unduh: ' + d.title);
+        if(d.type !== 'form' && d.url.charAt(0) === '/') a.setAttribute('download', '');
+        var isForm = (d.type === 'form');
+        var evName = (isForm ? 'kirim-' : 'unduh-') + d.id;
+        a.setAttribute('data-goatcounter-click', evName);
+        a.setAttribute('data-goatcounter-title', (isForm ? 'Buka form: ' : 'Unduh: ') + d.title);
         a.innerHTML =
-          '<span class="glass-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a49" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></span>' +
+          '<span class="glass-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a49" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            (isForm ? '<path d="M12 16V5"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/>' : '<path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/>') +
+          '</svg></span>' +
           '<span class="glass-text"><span class="title"></span><span class="sub"></span></span>';
-        a.querySelector('.title').textContent = d.title;
-        a.querySelector('.sub').textContent = d.sub || '';
+        lt(a.querySelector('.title'), d.title, d.title_en);
+        lt(a.querySelector('.sub'), d.sub || '', d.sub_en);
         var badge = document.createElement('span');
         badge.className = 'dl-badge';
         badge.hidden = true;
         a.querySelector('.glass-text').appendChild(badge);
-        dlBadges.push({ el: badge, id: d.id });
+        dlBadges.push({ el: badge, ev: evName, isForm: isForm, count: null });
         panel.appendChild(a);
       });
     });
@@ -1329,16 +1373,39 @@
     list.appendChild(panel);
   }
 
+  // Ikuti pergantian bahasa dari widget aksesibilitas (atribut lang pada <html>)
+  new MutationObserver(refreshLang).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
+  // Suara saat hover (mode suara aktif) untuk elemen yang dibuat dinamis.
+  // Widget aksesibilitas hanya memasang hover pada elemen yang sudah ada saat halaman dimuat.
+  var lastSpoken = null;
+  document.addEventListener('mouseover', function(e){
+    if(!document.documentElement.classList.contains('a11y-voice-active')) return;
+    var el = e.target.closest ? e.target.closest('#downloadList .a11y-readable-target') : null;
+    if(!el){ lastSpoken = null; return; }
+    if(el === lastSpoken) return;
+    lastSpoken = el;
+    var text = el.textContent.trim();
+    if(!text || !('speechSynthesis' in window)) return;
+    var lang = curLang() === 'en' ? 'en-US' : 'id-ID';
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    var vs = window.speechSynthesis.getVoices().filter(function(v){ return v.lang && v.lang.toLowerCase().indexOf(lang.slice(0,2)) === 0; });
+    if(vs.length) u.voice = vs[0];
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  });
+
   if(!GC_CODE) return;
 
   // 1) Nama event klik per tombol, otomatis dari domain tujuan
- document.querySelectorAll('a.glass-link:not(.ppid-parent)').forEach(function(a){
-  var host = '';
-  try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
-  if(host && !a.hasAttribute('data-goatcounter-click')) a.setAttribute('data-goatcounter-click', 'klik-' + host);
-  var t = a.querySelector('.title');
-  if(t && !a.hasAttribute('data-goatcounter-title')) a.setAttribute('data-goatcounter-title', t.textContent.trim());
-});
+  document.querySelectorAll('a.glass-link:not(.ppid-parent)').forEach(function(a){
+    var host = '';
+    try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
+    if(host && !a.hasAttribute('data-goatcounter-click')) a.setAttribute('data-goatcounter-click', 'klik-' + host);
+    var t = a.querySelector('.title');
+    if(t && !a.hasAttribute('data-goatcounter-title')) a.setAttribute('data-goatcounter-title', t.textContent.trim());
+  });
 
   // 2) Muat GoatCounter setelah atribut klik terpasang
   var sc = document.createElement('script');
@@ -1351,8 +1418,8 @@
   fetch('https://' + GC_CODE + '.goatcounter.com/counter/TOTAL.json')
     .then(function(r){ if(!r.ok) throw 0; return r.json(); })
     .then(function(d){
-      document.getElementById('visitorCount').textContent = d.count;
-      if(GC_SINCE) document.getElementById('visitorSince').textContent = 'dihitung sejak ' + GC_SINCE;
+      visitorTotal = d.count;
+      renderVisitor();
       document.getElementById('visitorBox').classList.add('is-ready');
     })
     .catch(function(){});
@@ -1364,10 +1431,11 @@
       .then(function(r){ if(!r.ok) throw 0; return r.json(); });
   }
   dlBadges.forEach(function(b){
-    var name = 'unduh-' + b.id;
+    var name = b.ev;
     getCount(name).catch(function(){ return getCount('/' + name); })
       .then(function(d){
-        b.el.textContent = d.count + ' klik unduh';
+        b.count = d.count;
+        b.el.textContent = badgeText(b);
         b.el.hidden = false;
       })
       .catch(function(){});
