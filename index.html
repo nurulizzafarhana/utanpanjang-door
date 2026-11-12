@@ -1332,11 +1332,13 @@
   if(!GC_CODE) return;
 
   // 1) Nama event klik per tombol, otomatis dari domain tujuan
-  document.querySelectorAll('a.glass-link').forEach(function(a){
-    var host = '';
-    try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
-    if(host && !a.hasAttribute('data-goatcounter-click')) a.setAttribute('data-goatcounter-click', 'klik-' + host);
-  });
+ document.querySelectorAll('a.glass-link:not(.ppid-parent)').forEach(function(a){
+  var host = '';
+  try { host = new URL(a.href).hostname.replace(/^www\./,''); } catch(e){}
+  if(host && !a.hasAttribute('data-goatcounter-click')) a.setAttribute('data-goatcounter-click', 'klik-' + host);
+  var t = a.querySelector('.title');
+  if(t && !a.hasAttribute('data-goatcounter-title')) a.setAttribute('data-goatcounter-title', t.textContent.trim());
+});
 
   // 2) Muat GoatCounter setelah atribut klik terpasang
   var sc = document.createElement('script');
