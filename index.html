@@ -990,6 +990,7 @@
     try{
       var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(!saved) return Object.assign({}, defaultState);
+      saved.lang = defaultState.lang; // bahasa selalu mulai dari Indonesia di setiap kunjungan; pengaturan lain tetap diingat
       return Object.assign({}, defaultState, saved);
     }catch(e){ return Object.assign({}, defaultState); }
   }
